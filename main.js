@@ -5,6 +5,7 @@ import * as phys from './lib2d-phys.js';
 /** Interface ParticleExtended
  * @typedef {object} ParticleExtended
  * @property {number} lifespan
+ * @property {() => boolean} isDead
  */
 
 /** Interface ShapeParticle
@@ -20,8 +21,10 @@ class Particle extends phys.Box{
      * @param {number} h 
      */
     constructor(x,y,w,h) {
-      super (x,y,w,h)
+      super (x,y,w,h);
       this.lifespan = 0;
+      this.velocity = lb2d.VectorRandom2D();
+      this.velocity.mult(2);
     }
   
     display() {
@@ -35,7 +38,15 @@ class Particle extends phys.Box{
 
     update() {
       super.update();
-      this.lifespan -= 0.5;
+      this.lifespan -= 0.4;
+    }
+
+    isDead() {
+      if (this.lifespan < -50) {
+        return true;
+      } else {
+        return false;
+      }
     }
   }
   
@@ -43,25 +54,16 @@ class Particle extends phys.Box{
 
 // Öffentliche Variablen definieren
 let /**@type {ShapeParticle[]}*/ shapes;
-let /**@type {function}*/ checkKicking;
-
 
 // Funtionen innerhalb main.js
 function createShapes() {
-  if (lb2d.isMouseUp()) {
-    shapes.push(new Particle(lb2d.mouseX+30, lb2d.mouseY, 20, 20));
-  }
+  shapes.push(new Particle(lb2d.mouseX+30, lb2d.mouseY, 7, 7));
 }
 
 
 // Initialisierung 
 function start() {    
     shapes = [];
-    checkKicking = phys.createKicking();
-    
-    shapes.push(new Particle(20, 450, 700, 40));
-    shapes[0].mass = Infinity; shapes[0].inertia = Infinity;
-    shapes[0].rotate(0.2);
     lb2d.init(800, 500);
     lb2d.strokeWidth(1.5);
     lb2d.startAnimation(draw);
@@ -73,12 +75,18 @@ function start() {
 function draw() {
     lb2d.background();
     createShapes();
-    //checkKicking(shapes);
     phys.checkCollision(shapes);
     phys.applyGravity(shapes);
-    //phys.applyFriction(shapes);
-    //phys.applyDragforce(shapes);
     phys.update(shapes);
+
+    // Looping through backwards to delete
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      if (shapes[i].isDead()) {
+        //remove the particle
+        shapes.splice(i, 1);
+      }
+    }
+
 }
 
 // Programmstart
