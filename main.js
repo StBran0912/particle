@@ -38,35 +38,35 @@ class Particle extends phys.Box{
 
     update() {
       super.update();
-      this.lifespan -= 0.4;
+      this.lifespan -= 0.5;
     }
 
     isDead() {
-      if (this.lifespan < -50) {
+      if (this.lifespan < -120) {
         return true;
       } else {
         return false;
       }
     }
   }
-  
 
-
-// Öffentliche Variablen definieren
-let /**@type {ShapeParticle[]}*/ shapes;
-
-// Funtionen innerhalb main.js
 function createShapes() {
-  shapes.push(new Particle(lb2d.mouseX+30, lb2d.mouseY, 7, 7));
+  particles.push(new Particle(lb2d.mouseX+30, lb2d.mouseY, 15, 15));
 }
 
+// Öffentliche Variablen definieren
+let /**@type {ShapeParticle[]}*/ particles;
+let /**@type {phys.Shape} */ wall;
 
 // Initialisierung 
 function start() {    
-    shapes = [];
+    particles = [];
     lb2d.init(800, 500);
     lb2d.strokeWidth(1.5);
     lb2d.startAnimation(draw);
+    wall = new phys.Box(10, 480, 780, 10);
+    wall.mass = Infinity;
+    wall.inertia = Infinity;
 
 }
 
@@ -74,18 +74,27 @@ function start() {
 // Hier wird die Animation berechnet und gezeichnet 
 function draw() {
     lb2d.background();
-    createShapes();
-    phys.checkCollision(shapes);
-    phys.applyGravity(shapes);
-    phys.update(shapes);
-
-    // Looping through backwards to delete
-    for (let i = shapes.length - 1; i >= 0; i--) {
-      if (shapes[i].isDead()) {
+    // Looping through backwards to delete Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      if (particles[i].isDead()) {
         //remove the particle
-        shapes.splice(i, 1);
+        particles.splice(i, 1);
       }
     }
+    wall.display();
+    createShapes();
+    phys.checkCollision(particles);
+    phys.applyGravity(particles);
+    phys.update(particles);
+
+    //Collision with wall
+    for (let i = 0; i < particles.length; i++) {
+      let [cp, normal] = phys.detectCollisionBox(particles[i], wall)
+      if (cp) {
+        phys.resolveCollisionBox(particles[i], wall, cp, normal);
+      }
+    }
+
 
 }
 
