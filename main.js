@@ -20,8 +20,8 @@ class Particle extends phys.Box{
      * @param {number} w 
      * @param {number} h 
      */
-    constructor(x,y,w,h) {
-      super (x,y,w,h);
+    constructor(x, y, w, h) {
+      super (x, y, w, h);
       this.lifespan = 0;
       this.velocity = lb2d.VectorRandom2D();
       this.velocity.mult(2);
@@ -51,23 +51,22 @@ class Particle extends phys.Box{
   }
 
 function createShapes() {
-  particles.push(new Particle(lb2d.mouseX+30, lb2d.mouseY, 15, 15));
+  particles.push(new Particle(lb2d.mouseX+30, lb2d.mouseY, 10, 10));
 }
 
 // Öffentliche Variablen definieren
 let /**@type {ShapeParticle[]}*/ particles;
-let /**@type {phys.Shape} */ wall;
+let /**@type {phys.Shape[]} */ walls;
 
 // Initialisierung 
 function start() {    
     particles = [];
+    walls = [new phys.Wall(10, 300, 400, 10), new phys.Wall(400, 400, 200, 10) ];
+    walls[0].rotate(0.4);
+    walls[1].rotate(-0.4);
     lb2d.init(800, 500);
     lb2d.strokeWidth(1.5);
     lb2d.startAnimation(draw);
-    wall = new phys.Box(10, 480, 780, 10);
-    wall.mass = Infinity;
-    wall.inertia = Infinity;
-
 }
 
 // draw() wird von der funktion start() aufgerufen als Endlos-Schleife.
@@ -81,20 +80,12 @@ function draw() {
         particles.splice(i, 1);
       }
     }
-    wall.display();
     createShapes();
     phys.checkCollision(particles);
+    phys.checkWalls(particles, walls);
     phys.applyGravity(particles);
     phys.update(particles);
-
-    //Collision with wall
-    for (let i = 0; i < particles.length; i++) {
-      let [cp, normal] = phys.detectCollisionBox(particles[i], wall)
-      if (cp) {
-        phys.resolveCollisionBox(particles[i], wall, cp, normal);
-      }
-    }
-
+    phys.update(walls);
 
 }
 

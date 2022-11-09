@@ -156,12 +156,35 @@ export class Ball {
     }
 }
 
+export class Wall extends Box{
+    /**
+     * 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} w 
+     * @param {number} h 
+     */
+    constructor(x,y,w,h) {
+      super (x,y,w,h)
+      this.mass = Infinity;
+      this.inertia = Infinity;
+      this.typ = "Wall";
+    }
+  
+    display() {
+        lb2d.push();
+        lb2d.strokeColor(255);
+        super.display();
+        lb2d.pop();
+    }
+}
+
 /**
  * @param {Shape} a Box
  * @param {Shape} b Box
  * @returns {[lb2d.Vector, lb2d.Vector]} cp, normal
  */
-export function detectCollisionBox(a, b) {
+function detectCollisionBox(a, b) {
     // Geprüft wird, ob eine Ecke von boxA in die Kante von boxB schneidet
     // Zusätzlich muss die Linie von Mittelpunkt boxA und Mittelpunkt boxB durch Kante von boxB gehen
     // i ist Index von Ecke und j ist Index von Kante
@@ -207,7 +230,7 @@ export function detectCollisionBox(a, b) {
  * @param {lb2d.Vector} cp Collisionpoint
  * @param {lb2d.Vector} normal Normalvector to edge e
  */
-export function resolveCollisionBox(boxA, boxB, cp, normal) {
+function resolveCollisionBox(boxA, boxB, cp, normal) {
     // rAP = Linie von A.location zu Kollisionspunkt (Ecke i von BoxA)
     let rAP = lb2d.subVector(cp, boxA.location);
     // rBP = Linie von B.location zu Kollisionspunkt (ebenfalls Ecke i von BoxA)
@@ -245,7 +268,7 @@ export function resolveCollisionBox(boxA, boxB, cp, normal) {
  * @param {Shape} b 
  * @returns {lb2d.Vector} normal
  */
-export function detectCollisionBall(a, b) {
+function detectCollisionBall(a, b) {
     //Distanz ermitteln
     let radiusTotal = a.radius + b.radius;
     let distance = a.location.dist(b.location);
@@ -267,7 +290,7 @@ export function detectCollisionBall(a, b) {
  * @param {Shape} b Ball
  * @param {lb2d.Vector} normal 
  */
-export function resolveCollisionBall(a, b, normal) {
+function resolveCollisionBall(a, b, normal) {
     const rA = lb2d.multVector(normal, -a.radius);
     const rA_perp = new lb2d.Vector(-rA.y, rA.x);
     const rB = lb2d.multVector(normal, b.radius);
@@ -301,7 +324,7 @@ export function resolveCollisionBall(a, b, normal) {
  * @param {Shape} box 
  * @returns {[lb2d.Vector, lb2d.Vector]} cp, normal
  */
-export function detectCollisionBallBox(ball, box) {
+function detectCollisionBallBox(ball, box) {
     for (let j = 0; j < 4; j++) {
         let e = lb2d.subVector(box.vertices[j+1], box.vertices[j]);
         //Vektor von Ecke der Box zum Ball
@@ -346,7 +369,7 @@ export function detectCollisionBallBox(ball, box) {
  * @param {lb2d.Vector} cp 
  * @param {lb2d.Vector} normal 
  */
-export function resolveCollisionBallBox(ball, box, cp, normal) {
+function resolveCollisionBallBox(ball, box, cp, normal) {
     const rA = lb2d.multVector(normal, -ball.radius);
     const rA_perp = new lb2d.Vector(-rA.y, rA.x);
     const rBP = lb2d.subVector(cp, box.location);
@@ -429,6 +452,41 @@ export function checkCollision(shapes) {
                 }
             }
 
+        }
+    }
+}
+
+/**
+ * @param {Shape[]} shapes 
+ * @param {Shape[]} walls 
+ */
+export function checkWalls(shapes, walls) {
+    for (let i = 0; i < shapes.length; i++) {    
+        for (let j = 0; j < walls.length; j++ ) {
+            //Shadow berechnen von Element i und Element j 
+            let shadow_i = createShadow(shapes[i]);
+            let shadow_j = createShadow(walls[j]);
+            //Überschneidung prüfen
+            if (shadow_i.maxX >= shadow_j.minX && shadow_i.minX <= shadow_j.maxX && shadow_i.maxY >= shadow_j.minY && shadow_i.minY <= shadow_j.maxY) {  
+                //dann Überschneidung
+                // Testcode
+                //lb2d.line(shapes[i].location.x, shapes[i].location.y, shapes[j].location.x, shapes[j].location.y)
+                // Ende Testcode
+    
+                if (shapes[i].typ == "Ball") {
+                    let [cp, normal] = detectCollisionBallBox(shapes[i],walls[j]);
+                    if (cp) {
+                        resolveCollisionBallBox(shapes[i],walls[j], cp, normal);
+                    }
+                }
+            
+                if (shapes[i].typ == "Box") {
+                    let [cp, normal] = detectCollisionBox(shapes[i], walls[j]);
+                    if (cp) {
+                        resolveCollisionBox(shapes[i], walls[j], cp, normal);  
+                    }            
+                }
+            }
         }
     }
 }
@@ -560,7 +618,9 @@ export function applyDragforce(shapes) {
  */
 export function update(shapes) {
     shapes.forEach(element => {
-        element.update();
+        if (element.typ != "Wall") {
+            element.update();
+        }
         element.display();
     });
 }
